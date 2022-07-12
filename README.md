@@ -1,1 +1,1 @@
-# trello-cli
+# Trello CLI
