@@ -2,4 +2,6 @@
 
 source "https://rubygems.org"
 
-# gem "rails"
+gem 'tty-option'
+gem "tty-prompt"
+gem "tty-editor"

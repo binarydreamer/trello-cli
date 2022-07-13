@@ -1,7 +1,8 @@
 class App
   class << self
     def run
-      puts "Setting up basic structure"
+      Config.load
+      puts Config.me
     end
   end
 end
