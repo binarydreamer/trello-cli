@@ -107,10 +107,10 @@ class App
     def new_card(list)
       system("clear")
 
-      name = @prompt.ask("Name: ", required: true)
+      name = @prompt.ask("Name:", required: true)
 
       labels = @labels.map{|label| [label["name"], label["id"]]}.to_h
-      idLabels = @prompt.multi_select("Select drinks?", labels)
+      idLabels = @prompt.multi_select("Labels:", labels)
 
       Trello.create_card name, list["id"], idLabels
     end
@@ -137,9 +137,9 @@ class App
                 "[---] "
               end
 
-      sufix <<  if card["idLabels"].any?
-                  "[#{card["idLabels"].map{|id| @labels.find{|label| label["id"] == id}["name"]}.join(", ")}] "
-                end
+      if card["idLabels"].instance_of?(Array) && card["idLabels"].any?
+        sufix << "[#{card["idLabels"].map{|id| @labels.find{|label| label["id"] == id}["name"]}.join(", ")}] "
+      end
     end
 
     def card_actions_loop(card, name)
@@ -148,12 +148,13 @@ class App
         _name = "#{name} >> #{card_name(card)}"
         puts breadcrumbs(_name)
 
-        case @prompt.select("What do you want to do with the card?", %w(⬅︎\ Back Change\ Name Notes Move))
+        case @prompt.select("What do you want to do with the card?",
+                            %w(Back Change\ Name Notes Labels Assigned\ To Move))
         when "Change Name"
           name = @prompt.ask("What is the new name?", value: card["name"])
 
           if name != card["name"]
-            Trello.update_card_name(card["id"], name)
+            Trello.update_card(card["id"], name: name)
             card["name"] = name
           end
         when "Notes"
@@ -165,13 +166,37 @@ class App
           delete_file(path)
 
           if desc != card["desc"]
-            Trello.update_card_desc(card["id"], desc)
+            Trello.update_card(card["id"], desc: desc)
             card["desc"] = desc
+          end
+        when "Labels"
+          labels = @labels.map{|label| [label["name"], label["id"]]}.to_h
+          idLabels = @prompt.multi_select("Set labels for card:", labels)
+
+          unless idLabels.sort == card["idLabels"].sort
+            if idLabels.empty?
+              Trello.update_card(card["id"], idLabels: "EMPTY")
+            else
+              Trello.update_card(card["id"], idLabels: idLabels)
+            end
+            card["idLabels"] = idLabels
+          end
+        when "Assigned To"
+          members = @members.map{|member| [member["fullName"], member["id"]]}.to_h
+          idMembers = @prompt.multi_select("Set members assigned to this card:", members)
+
+          unless idMembers.sort == card["idMembers"].sort
+            if idMembers.empty?
+              Trello.update_card(card["id"], idMembers: "EMPTY")
+            else
+              Trello.update_card(card["id"], idMembers: idMembers)
+            end
+            card["idMembers"] = idMembers
           end
         when "Move"
           list = @prompt.select("Which list do you want to move the card to?", lists(card['idBoard']))
           unless list == 'back'
-            Trello.update_card_list(card["id"], list)
+            Trello.update_card(card["id"], idList: list)
             break
           end
         else

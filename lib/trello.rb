@@ -29,18 +29,9 @@ class Trello
       post "https://api.trello.com/1/cards?#{query}"
     end
 
-    def update_card_name(id, name)
-      query = URI.encode_www_form(name: name)
-      update "https://api.trello.com/1/cards/#{id}?#{query}"
-    end
-
-    def update_card_desc(id, desc)
-      query = URI.encode_www_form(desc: desc)
-      update "https://api.trello.com/1/cards/#{id}?#{query}"
-    end
-
-    def update_card_list(id, list)
-      query = URI.encode_www_form(idList: list)
+    def update_card(id, options)
+      query = URI.encode_www_form(options)
+      query.gsub! "EMPTY", ""
       update "https://api.trello.com/1/cards/#{id}?#{query}"
     end
 
