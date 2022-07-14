@@ -16,9 +16,9 @@ class App
 
 
       boards_loop do |board|
-        lists_loop(board) do |list, members, name|
-          cards_loop(list, members, name) do |card, members, name|
-            card_actions_loop(card, members, name)
+        lists_loop(board) do |list, name|
+          cards_loop(list, name) do |card, name|
+            card_actions_loop(card, name)
           end
         end
       end
@@ -35,6 +35,8 @@ class App
           system("clear")
           break
         else
+          @members = Trello.members(board['id'])
+          @labels = Trello.labels(board['id'])
           yield board
         end
       end
@@ -42,7 +44,7 @@ class App
 
     def boards
       @boards ||= begin
-                    boards = { '⬅︎ Exit' => 'exit' }
+                    boards = { "\033[1;31mExit\033[0m" => 'exit' }
                     boards.merge!(Trello.boards.map do |board|
                       [board['name'], board]
                     end.to_h)
@@ -51,7 +53,6 @@ class App
     end
 
     def lists_loop(board)
-      members = Trello.members(board['id'])
       loop do
         system("clear")
         name = board["name"]
@@ -61,69 +62,90 @@ class App
         if list == 'back'
           break
         else
-          yield list, members, name
+          yield list, name
         end
       end
     end
 
     def lists(board)
-      lists = { "⬅︎ Back" => 'back' }
+      lists = { "\033[1;31mBack\033[0m" => 'back' }
       lists.merge!(Trello.lists(board).map do |list|
         [list['name'], list]
       end.to_h)
       lists
     end
 
-    def cards_loop(list, members, name)
+    def cards_loop(list, name)
       loop do
         system("clear")
         _name = "#{name} >> #{list["name"]}"
         puts breadcrumbs(_name)
 
-        card = @prompt.select("Which card do you want to work with?", cards(list['id'], members))
-        if card == 'back'
+        card = @prompt.select("Which card do you want to work with?", cards(list['id']))
+        case card
+        when 'back'
           break
+        when 'new'
+          new_card(list)
         else
-          yield card, members, _name
+          yield card, _name
         end
       end
     end
 
-    def cards(list, members)
-      cards = { "⬅︎ Back" => 'back' }
+    def cards(list)
+      cards = {
+        "\033[1;31mBack\033[0m" => 'back',
+        "\033[1;32mNew\033[0m" => 'new'
+      }
       cards.merge!(Trello.cards(list).map do |card|
-        [card_name(card, members), card]
+        [card_name(card), card]
       end.to_h)
       cards
     end
 
-    def card_name(card, members)
+    def new_card(list)
+      system("clear")
+
+      name = @prompt.ask("Name: ", required: true)
+
+      labels = @labels.map{|label| [label["name"], label["id"]]}.to_h
+      idLabels = @prompt.multi_select("Select drinks?", labels)
+
+      Trello.create_card name, list["id"], idLabels
+    end
+
+    def card_name(card)
       suffix = card_name_suffix(card)
-      names = card["idMembers"].map{|mid| members.find{|member| member["id"] == mid}["fullName"]}.join(", ")
+      names = card["idMembers"].map{|mid| @members.find{|member| member["id"] == mid}["fullName"]}.join(", ")
       notes = if card['desc'].strip.empty?
                 ""
               else
                 "📝 "
               end
-      "#{suffix}#{card['name']} #{notes}- #{names}"
+      "#{suffix}#{card['name']} #{notes}#{"- #{names}" unless names.empty?}"
     end
 
     def card_name_suffix(card)
       return "" if Config.story_point_plugin_id.nil?
 
-      data = card["pluginData"].find{|pd| pd["idPlugin"] == Config.story_point_plugin_id}["value"]
-      if data
-        data = JSON.parse(data)
-        "[#{data["points"]}sp] "
-      else
-        "[---] "
-      end
+      data = card["pluginData"].find{|pd| pd["idPlugin"] == Config.story_point_plugin_id}&.dig("value")
+      sufix = if data
+                data = JSON.parse(data)
+                "[#{data["points"]}sp] "
+              else
+                "[---] "
+              end
+
+      sufix <<  if card["idLabels"].any?
+                  "[#{card["idLabels"].map{|id| @labels.find{|label| label["id"] == id}["name"]}.join(", ")}] "
+                end
     end
 
-    def card_actions_loop(card, members, name)
+    def card_actions_loop(card, name)
       loop do
         system("clear")
-        _name = "#{name} >> #{card_name(card, members)}"
+        _name = "#{name} >> #{card_name(card)}"
         puts breadcrumbs(_name)
 
         case @prompt.select("What do you want to do with the card?", %w(⬅︎\ Back Change\ Name Notes Move))
