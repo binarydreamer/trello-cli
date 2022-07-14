@@ -38,23 +38,31 @@ class Trello
     private
 
     def update(url)
-      uri = URI(url)
+      request :put, URI(url)
+    end
+
+    def get(url)
+      request :get, URI(url)
+    end
+
+    def request(method, uri)
       Net::HTTP.start(uri.host, uri.port, use_ssl: true) do |http|
-        request = Net::HTTP::Put.new uri
-        request['Authorization'] = "OAuth oauth_consumer_key=\"#{Config.key}\", oauth_token=\"#{Config.token}\""
-        response = http.request request
+        req = case method
+              when :get
+                Net::HTTP::Get.new uri
+              when :put
+                Net::HTTP::Put.new uri
+              else
+                raise "Unknown method for trello api"
+              end
+        req['Authorization'] = authorization
+        response = http.request req
         JSON.parse(response.body)
       end
     end
 
-    def get(url)
-      uri = URI(url)
-      Net::HTTP.start(uri.host, uri.port, use_ssl: true) do |http|
-        request = Net::HTTP::Get.new uri
-        request['Authorization'] = "OAuth oauth_consumer_key=\"#{Config.key}\", oauth_token=\"#{Config.token}\""
-        response = http.request request
-        JSON.parse(response.body)
-      end
+    def authorization
+      @authorization ||= "OAuth oauth_consumer_key=\"#{Config.key}\", oauth_token=\"#{Config.token}\""
     end
   end
 end

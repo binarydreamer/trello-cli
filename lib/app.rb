@@ -1,8 +1,19 @@
 class App
   class << self
     def run
-      prompt = TTY::Prompt.new
       Config.load
+
+      @prompt = TTY::Prompt.new
+      @prompt.on(:keypress) do |event|
+        if event.value == "j"
+          @prompt.trigger(:keydown)
+        end
+
+        if event.value == "k"
+          @prompt.trigger(:keyup)
+        end
+      end
+
 
       boards_loop do |board|
         lists_loop(board) do |list, members, name|
@@ -17,11 +28,11 @@ class App
     private
 
     def boards_loop
-      prompt = TTY::Prompt.new
       loop do
         system("clear")
-        board  = prompt.select("Which board do you want to work with?", boards)
+        board  = @prompt.select("Which board do you want to work with?", boards)
         if board == 'exit'
+          system("clear")
           break
         else
           yield board
@@ -40,14 +51,13 @@ class App
     end
 
     def lists_loop(board)
-      prompt = TTY::Prompt.new
       members = Trello.members(board['id'])
       loop do
         system("clear")
         name = board["name"]
         puts breadcrumbs(name)
 
-        list = prompt.select("Which list do you want to work with?", lists(board['id']))
+        list = @prompt.select("Which list do you want to work with?", lists(board['id']))
         if list == 'back'
           break
         else
@@ -65,13 +75,12 @@ class App
     end
 
     def cards_loop(list, members, name)
-      prompt = TTY::Prompt.new
       loop do
         system("clear")
         _name = "#{name} >> #{list["name"]}"
         puts breadcrumbs(_name)
 
-        card = prompt.select("Which card do you want to work with?", cards(list['id'], members))
+        card = @prompt.select("Which card do you want to work with?", cards(list['id'], members))
         if card == 'back'
           break
         else
@@ -112,15 +121,14 @@ class App
     end
 
     def card_actions_loop(card, members, name)
-      prompt = TTY::Prompt.new
       loop do
         system("clear")
         _name = "#{name} >> #{card_name(card, members)}"
         puts breadcrumbs(_name)
 
-        case prompt.select("What do you want to do with the card?", %w(⬅︎\ Back Change\ Name Notes Move))
+        case @prompt.select("What do you want to do with the card?", %w(⬅︎\ Back Change\ Name Notes Move))
         when "Change Name"
-          name = prompt.ask("What is the new name?", value: card["name"])
+          name = @prompt.ask("What is the new name?", value: card["name"])
 
           if name != card["name"]
             Trello.update_card_name(card["id"], name)
@@ -139,7 +147,7 @@ class App
             card["desc"] = desc
           end
         when "Move"
-          list = prompt.select("Which list do you want to move the card to?", lists(card['idBoard']))
+          list = @prompt.select("Which list do you want to move the card to?", lists(card['idBoard']))
           unless list == 'back'
             Trello.update_card_list(card["id"], list)
             break
