@@ -171,7 +171,8 @@ class App
           end
         when "Labels"
           labels = @labels.map{|label| [label["name"], label["id"]]}.to_h
-          idLabels = @prompt.multi_select("Set labels for card:", labels)
+          defaultLabels = card["idLabels"].map{|id| @labels.find{|label| label["id"] == id}["name"]}
+          idLabels = @prompt.multi_select("Set labels for card:", labels, default: defaultLabels)
 
           unless idLabels.sort == card["idLabels"].sort
             if idLabels.empty?
@@ -183,7 +184,8 @@ class App
           end
         when "Assigned To"
           members = @members.map{|member| [member["fullName"], member["id"]]}.to_h
-          idMembers = @prompt.multi_select("Set members assigned to this card:", members)
+          defaultMembers = card["idMembers"].map{|id| @members.find{|member| member["id"] == id}["fullName"]}
+          idMembers = @prompt.multi_select("Set members assigned to this card:", members, default: defaultMembers)
 
           unless idMembers.sort == card["idMembers"].sort
             if idMembers.empty?
