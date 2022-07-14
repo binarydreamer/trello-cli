@@ -81,7 +81,9 @@ class App
         _name = "#{name} >> #{list["name"]}"
         puts breadcrumbs(_name)
 
-        card = @prompt.select("Which card do you want to work with?", cards(list['id']))
+        card = @prompt.select("Which card do you want to work with?",
+                              cards(list['id']),
+                              per_page: TTY::Screen.rows - 3)
         case card
         when 'back'
           break

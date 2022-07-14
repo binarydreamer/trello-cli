@@ -23,6 +23,7 @@ PLATFORMS
 DEPENDENCIES
   tty-editor
   tty-prompt
+  tty-screen
 
 BUNDLED WITH
    2.3.7
