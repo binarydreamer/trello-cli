@@ -22,6 +22,10 @@ class Config
         @config[property]
       end
     end
+
+    def story_point_plugin_id
+      @config["story_point_plugin_id"]
+    end
   end
 end
 
