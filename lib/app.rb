@@ -29,10 +29,10 @@ class App
 
     def boards_loop
       loop do
-        system("clear")
+        $stdout.clear_screen
         board  = @prompt.select("Which board do you want to work with?", boards)
         if board == 'exit'
-          system("clear")
+          $stdout.clear_screen
           break
         else
           @members = Trello.members(board['id'])
@@ -54,7 +54,7 @@ class App
 
     def lists_loop(board)
       loop do
-        system("clear")
+        $stdout.clear_screen
         name = board["name"]
         puts breadcrumbs(name)
 
@@ -117,7 +117,7 @@ class App
       _cards           = []
 
       loop do
-        system("clear")
+        $stdout.clear_screen
         _name = "#{name} >> #{list["name"]}"
         puts breadcrumbs(_name)
 
@@ -186,7 +186,7 @@ class App
     end
 
     def new_card(list)
-      system("clear")
+      $stdout.clear_screen
 
       name = @prompt.ask("Name:", required: true)
 
@@ -235,7 +235,7 @@ class App
 
     def card_actions_loop(card, name)
       loop do
-        system("clear")
+        $stdout.clear_screen
         _name = "#{name} >> #{card_name(card)}"
         puts breadcrumbs(_name)
 
