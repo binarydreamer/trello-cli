@@ -1,52 +1,66 @@
 class Trello
+  HOST = 'https://api.trello.com/1/'
+
   class << self
     def me
-      get 'https://api.trello.com/1/members/me'
+      get 'members/me'
     end
 
     def boards
-      get 'https://api.trello.com/1/members/me/boards'
+      get 'members/me/boards'
     end
 
     def members(board)
-      get "https://api.trello.com/1/boards/#{board}/members"
+      get "boards/#{board}/members"
     end
 
     def lists(board)
-      get "https://api.trello.com/1/boards/#{board}/lists"
+      get "boards/#{board}/lists"
     end
 
     def labels(board)
-      get "https://api.trello.com/1/boards/#{board}/labels"
+      get "boards/#{board}/labels"
     end
 
     def cards(list)
-      get "https://api.trello.com/1/lists/#{list}/cards?pluginData=true"
+      get "lists/#{list}/cards?pluginData=true"
     end
 
-    def create_card(name, list, labels)
-      query = URI.encode_www_form(name: name, idList: list, idLabels: labels, pos: "bottom")
-      post "https://api.trello.com/1/cards?#{query}"
+    def create_card(options)
+      query = URI.encode_www_form(options)
+      post "cards?#{query}"
     end
 
     def update_card(id, options)
       query = URI.encode_www_form(options)
       query.gsub! "EMPTY", ""
-      update "https://api.trello.com/1/cards/#{id}?#{query}"
+      update "cards/#{id}?#{query}"
+    end
+
+    def delete_card(id)
+      delete "cards/#{id}"
     end
 
     private
 
     def update(url)
-      request :put, URI(url)
+      request :put, request_uri(url)
     end
 
     def get(url)
-      request :get, URI(url)
+      request :get, request_uri(url)
     end
 
     def post(url)
-      request :post, URI(url)
+      request :post, request_uri(url)
+    end
+
+    def delete(url)
+      request :delete, request_uri(url)
+    end
+
+    def request_uri(url)
+      URI(HOST + url)
     end
 
     def request(method, uri)
@@ -58,6 +72,8 @@ class Trello
                 Net::HTTP::Put.new uri
               when :post
                 Net::HTTP::Post.new uri
+              when :delete
+                Net::HTTP::Delete.new uri
               else
                 raise "Unknown method for trello api"
               end
